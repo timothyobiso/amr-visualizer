@@ -11,7 +11,6 @@ def parse_amr(amr):
     tokens = amr.split()
     stack = []
     nodes = {}
-    layer = -1
     waiting = []
     parent = []
     for token in tokens:
@@ -22,19 +21,20 @@ def parse_amr(amr):
             stack.pop()
             parent = parent[:len(parent)-1]
         elif token.startswith(':'):
-            print("PARENT", parent)
+            # print("PARENT", parent)
             waiting.append((parent[-1], token))
         else:
-
+            flag = True
             if waiting:
                 for p, e in waiting:
                     if "/" not in token:
                         token = nodes[token]
+                        flag = False
                     graph.edge(p, token, label=e)
                 waiting = []
             nodes[token.split("/")[0]] = token
-            if "/" in token:
-                graph.node(token)
+            graph.node(token)
+            if flag:
                 parent.append(token)
 
     return graph
