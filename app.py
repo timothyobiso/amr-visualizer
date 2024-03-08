@@ -1,47 +1,50 @@
 import streamlit as st
-import pandas as pd
-import altair as alt
 import graphviz
-from collections import Counter
+
+
+example = """(a / and
+      :op1 (r / run-02
+            :ARG0 (p / person
+                  :ARG0-of (s / shepherd-01))
+            :direction (u / up))
+      :op2 (c / catch-01
+            :ARG0 p
+            :ARG1 (h2 / he))
+      :time (s2 / see-01
+            :ARG0 p
+            :ARG1 (e / event)))"""
 
 
 def parse_amr(amr):
     graph = graphviz.Digraph()
     amr = amr.replace("(", " ( ").replace(")", " ) ").replace(' / ', '/')
     tokens = amr.split()
-    stack = []
     nodes = {}
-    waiting = []
     parent = []
-    for token in tokens:
+    waiting = None
 
-        if token == "(":
-            stack.append(token)
-        elif token == ")":
-            stack.pop()
-            parent = parent[:len(parent)-1]
+    for token in tokens:
+        if token == ")":
+            parent.pop()
+        elif token == "(":
+            continue
         elif token.startswith(':'):
-            # print("PARENT", parent)
-            waiting.append((parent[-1], token))
+            waiting = (parent[-1], token)
         else:
-            flag = True
+            parent.append(token)
             if waiting:
-                for p, e in waiting:
-                    if "/" not in token:
-                        token = nodes[token]
-                        flag = False
-                    graph.edge(p, token, label=e)
-                waiting = []
+                if "/" not in token:
+                    token = nodes[token]
+                    parent.pop()
+                graph.edge(waiting[0], token, label=waiting[1])
+                waiting = None
             nodes[token.split("/")[0]] = token
             graph.node(token)
-            if flag:
-                parent.append(token)
-
     return graph
 
 
 st.markdown("# AMR Visualizer")
-text = st.text_area("Enter an AMR graph", height=150, value="(a / and :op1 (b / big) :op2 (c / cat))")
+text = st.text_area("Enter an AMR graph", height=300, value=example)
 
 st.graphviz_chart(parse_amr(text))
 
